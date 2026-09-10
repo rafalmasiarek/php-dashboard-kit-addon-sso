@@ -1,0 +1,58 @@
+{% extends "admin-layout.twig" %}
+
+{% block admin_content %}
+    {% for type, messages in flash.all() %}
+        {% for message in messages %}
+        <div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if tokens is empty %}
+    <div class="alert alert-info">No active SSO access tokens.</div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>User</th>
+                    <th>Client</th>
+                    <th>Scopes</th>
+                    <th>Expires</th>
+                    <th>JTI</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for token in tokens %}
+                <tr>
+                    <td><small>{{ token.email|default(token.user_id) }}</small></td>
+                    <td><code>{{ token.client_id }}</code></td>
+                    <td>
+                        {% set scopes = token.scopes|json_decode %}
+                        {% if scopes is iterable %}
+                            {% for scope in scopes %}
+                                <span class="badge bg-secondary me-1">{{ scope }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ token.expires_at }}</small></td>
+                    <td><code class="small">{{ token.jti }}</code></td>
+                    <td>
+                        <form method="post" action="{{ dash }}/admin/sso/tokens/{{ token.jti|url_encode }}/revoke"
+                              onsubmit="return confirm('Revoke this token?')">
+                            {{ csrf_token()|raw }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+{% endblock admin_content %}

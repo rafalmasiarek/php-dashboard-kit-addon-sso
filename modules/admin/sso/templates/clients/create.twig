@@ -1,0 +1,53 @@
+{% extends "admin-layout.twig" %}
+
+{% block admin_content %}
+    {% for type, messages in flash.all() %}
+        {% for message in messages %}
+        <div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="card shadow-sm" style="max-width: 640px">
+        <div class="card-body">
+            <form method="post" action="{{ dash }}/admin/sso/clients">
+                {{ csrf_token()|raw }}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="name">Client Name</label>
+                    <input type="text" class="form-control" id="name" name="name"
+                           placeholder="e.g. Swagger UI" required maxlength="255">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="redirect_uris">Allowed Redirect URIs</label>
+                    <textarea class="form-control font-monospace" id="redirect_uris" name="redirect_uris"
+                              rows="4" placeholder="https://app.example.com/callback&#10;http://localhost:3000/callback" required></textarea>
+                    <div class="form-text">One URI per line. Exact match enforced.</div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="generate_secret" name="generate_secret" value="1">
+                        <label class="form-check-label" for="generate_secret">
+                            Generate client secret (confidential client)
+                        </label>
+                    </div>
+                    <div class="form-text">Leave unchecked for public clients that use PKCE without a secret.</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Client</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4 p-3 border rounded bg-light" style="max-width: 640px">
+        <p class="mb-1 fw-semibold small">After creation:</p>
+        <ul class="mb-0 small text-muted">
+            <li>The <strong>Client ID</strong> and (if generated) <strong>Client Secret</strong> will appear as a flash message — copy it immediately, the secret is shown only once.</li>
+            <li>Configure your client to use <code>code_challenge_method=S256</code> (PKCE required).</li>
+        </ul>
+    </div>
+{% endblock admin_content %}

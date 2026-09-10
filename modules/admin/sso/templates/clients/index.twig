@@ -1,0 +1,61 @@
+{% extends "admin-layout.twig" %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-end mb-3"><a href="{{ dash }}/admin/sso/clients/create" class="btn btn-primary">New Client</a></div>
+
+    {% for type, messages in flash.all() %}
+        {% for message in messages %}
+        <div class="alert alert-{{ type }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if clients is empty %}
+    <div class="alert alert-info">No SSO clients registered yet.</div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Client ID</th>
+                    <th>Redirect URIs</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td><strong>{{ client.name }}</strong></td>
+                    <td><code class="user-select-all">{{ client.client_id }}</code></td>
+                    <td>
+                        {% for uri in client.redirect_uris_list %}
+                            <small class="d-block text-muted">{{ uri }}</small>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if client.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td><small class="text-muted">{{ client.created_at }}</small></td>
+                    <td>
+                        <form method="post" action="{{ dash }}/admin/sso/clients/{{ client.client_id|url_encode }}/delete"
+                              onsubmit="return confirm('Delete client {{ client.name|e('js') }}?')">
+                            {{ csrf_token()|raw }}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+{% endblock admin_content %}

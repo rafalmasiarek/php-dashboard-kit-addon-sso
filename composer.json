@@ -1,0 +1,16 @@
+{
+    "name": "rafalmasiarek/dashboard-kit-addon-sso",
+    "description": "OAuth2/OIDC SSO plugin for dashboard-kit — Authorization Code + PKCE, RS256 JWT, JWKS",
+    "type": "library",
+    "license": "BUSL-1.1",
+    "require": {
+        "php": ">=8.2",
+        "rafalmasiarek/dashboard-kit": "*",
+        "firebase/php-jwt": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "rafalmasiarek\\DashboardKitSso\\": "src/"
+        }
+    }
+}
