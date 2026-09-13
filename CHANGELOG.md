@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.0.1...v1.0.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* **deps:** bump firebase/php-jwt to ^7.0 ([f242e57](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/f242e5778a382ff80a550df9f7a977746ea9cd60))
+* **deps:** bump firebase/php-jwt to ^7.0 (CVE-2025-45769) ([2faef77](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/2faef7785d7af4f3a2817347f52f7266df4c4ae9))
+
 ## [1.0.1](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.0.0...v1.0.1) (2026-09-13)
 
 
