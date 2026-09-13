@@ -109,6 +109,13 @@ final class SsoAddon
             $loader->addPath(__DIR__ . '/../modules/admin/sso/templates', 'sso-admin');
         }
 
+        // Keep config-declared clients (e.g. this app's own Swagger UI) in sync
+        // with the current issuer/base path on every boot — config is the
+        // source of truth for first-party clients, not whatever was stored the
+        // first time this ran. Real third-party clients are registered only via
+        // the admin UI below and are never touched here.
+        self::syncConfigClients($container->get(ClientRepository::class), (array) ($config['clients'] ?? []), $issuer);
+
         $dashboardPrefix = (string) ($container->get('dashboard.url_prefix'));
 
         // Register protocol routes (no auth — public OAuth2 endpoints).
@@ -116,6 +123,41 @@ final class SsoAddon
 
         // Register admin UI routes (admin role required).
         self::registerAdminRoutes($app, $container, $dashboardPrefix);
+    }
+
+    /**
+     * Syncs config-declared OAuth2 clients into sso_clients on every boot.
+     *
+     * Each entry is `['client_id' => string, 'name' => string, 'redirect_uris' => string[]]`.
+     * A redirect_uri starting with '/' is treated as relative to $issuer (so it
+     * automatically follows APP_BASE_PATH/domain changes); anything else is used
+     * as-is. This lets a project declare its own first-party clients (e.g. its
+     * bundled Swagger UI) in config instead of registering them by hand, while
+     * externally-registered clients (admin UI, not present in config) are left
+     * completely untouched.
+     *
+     * @param ClientRepository                                                  $repo    Client repository.
+     * @param array<int, array{client_id: string, name: string, redirect_uris: string[]}> $clients Config-declared clients.
+     * @param string                                                             $issuer  Full issuer base URL (no trailing slash).
+     * @return void
+     */
+    private static function syncConfigClients(ClientRepository $repo, array $clients, string $issuer): void
+    {
+        foreach ($clients as $client) {
+            $clientId = (string) ($client['client_id'] ?? '');
+            $name     = (string) ($client['name'] ?? $clientId);
+
+            if ($clientId === '') {
+                continue;
+            }
+
+            $redirectUris = array_map(
+                static fn($uri) => str_starts_with((string) $uri, '/') ? $issuer . $uri : (string) $uri,
+                (array) ($client['redirect_uris'] ?? []),
+            );
+
+            $repo->syncFromConfig($clientId, $name, $redirectUris);
+        }
     }
 
     /**
