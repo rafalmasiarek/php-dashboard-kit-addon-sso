@@ -109,6 +109,9 @@ final class SsoAddon
             $loader->addPath(__DIR__ . '/../modules/admin/sso/templates', 'sso-admin');
         }
 
+        // Keep config-declared clients in sync with the current issuer on every boot.
+        self::syncConfigClients($container->get(ClientRepository::class), (array) ($config['clients'] ?? []), $issuer);
+
         $dashboardPrefix = (string) ($container->get('dashboard.url_prefix'));
 
         // Register protocol routes (no auth — public OAuth2 endpoints).
@@ -116,6 +119,35 @@ final class SsoAddon
 
         // Register admin UI routes (admin role required).
         self::registerAdminRoutes($app, $container, $dashboardPrefix);
+    }
+
+    /**
+     * Syncs config-declared OAuth2 clients into sso_clients on every boot.
+     *
+     * A redirect_uri starting with '/' is resolved relative to $issuer.
+     *
+     * @param ClientRepository                                                  $repo     Client repository.
+     * @param array<int, array{client_id: string, name: string, redirect_uris: string[]}> $clients Config-declared clients.
+     * @param string                                                             $issuer   Full issuer base URL (no trailing slash).
+     * @return void
+     */
+    private static function syncConfigClients(ClientRepository $repo, array $clients, string $issuer): void
+    {
+        foreach ($clients as $client) {
+            $clientId = (string) ($client['client_id'] ?? '');
+            $name     = (string) ($client['name'] ?? $clientId);
+
+            if ($clientId === '') {
+                continue;
+            }
+
+            $redirectUris = array_map(
+                static fn($uri) => str_starts_with((string) $uri, '/') ? $issuer . $uri : (string) $uri,
+                (array) ($client['redirect_uris'] ?? []),
+            );
+
+            $repo->syncFromConfig($clientId, $name, $redirectUris);
+        }
     }
 
     /**

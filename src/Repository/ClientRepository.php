@@ -86,6 +86,36 @@ final class ClientRepository
     }
 
     /**
+     * Upserts a config-declared client. Unlike create(), this keeps
+     * client_secret_hash and is_active untouched on update.
+     *
+     * @param string   $clientId     Unique client identifier (e.g. 'swagger-ui').
+     * @param string   $name         Human-readable display name.
+     * @param string[] $redirectUris Allowed redirect URIs (exact match enforced on use).
+     * @return void
+     */
+    public function syncFromConfig(string $clientId, string $name, array $redirectUris): void
+    {
+        $driver   = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $urisJson = json_encode($redirectUris, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        if ($driver === 'mysql') {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO sso_clients (client_id, name, redirect_uris) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name), redirect_uris = VALUES(redirect_uris)'
+            );
+        } else {
+            $stmt = $this->pdo->prepare(
+                "INSERT INTO sso_clients (client_id, name, redirect_uris, is_active, created_at)
+                 VALUES (?, ?, ?, 1, datetime('now'))
+                 ON CONFLICT(client_id) DO UPDATE SET name = excluded.name, redirect_uris = excluded.redirect_uris"
+            );
+        }
+
+        $stmt->execute([$clientId, $name, $urisJson]);
+    }
+
+    /**
      * Enables or disables a client without deleting it.
      *
      * @param string $clientId The client identifier.
