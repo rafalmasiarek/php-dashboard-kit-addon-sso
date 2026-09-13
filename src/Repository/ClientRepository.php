@@ -86,14 +86,8 @@ final class ClientRepository
     }
 
     /**
-     * Creates or updates a config-declared client, keeping name and
-     * redirect_uris in sync with the application config on every boot.
-     *
-     * Unlike create(), this is an upsert: intended for first-party clients
-     * (e.g. the app's own Swagger UI) whose identity is derived from config
-     * rather than registered once via the admin UI. client_secret_hash and
-     * is_active are left untouched on update, so revoking a config-declared
-     * client via the admin UI still sticks across reboots.
+     * Upserts a config-declared client. Unlike create(), this keeps
+     * client_secret_hash and is_active untouched on update.
      *
      * @param string   $clientId     Unique client identifier (e.g. 'swagger-ui').
      * @param string   $name         Human-readable display name.
