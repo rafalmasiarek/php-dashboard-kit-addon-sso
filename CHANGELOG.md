@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.0.2...v1.1.0) (2026-09-13)
+
+
+### Features
+
+* sync config-declared OAuth2 clients on every boot ([7875baa](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/7875baa36339ae0ea8789383ad2f2df7ee635725))
+* sync config-declared OAuth2 clients on every boot ([051bf24](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/051bf24e5bdb53d7e757aa9203d7da6406ba1609))
+
 ## [1.0.2](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.0.1...v1.0.2) (2026-09-13)
 
 
