@@ -99,7 +99,7 @@ final class AuthorizeHandler
                 'state'                 => $state,
             ];
 
-            $loginUrl = $this->dashboardPrefix . '/login?from=' . urlencode('/oauth/authorize?' . http_build_query($params));
+            $loginUrl = $this->dashboardPrefix . '/login?from=' . urlencode($this->dashboardPrefix . '/oauth/authorize?' . http_build_query($params));
 
             return $response->withHeader('Location', $loginUrl)->withStatus(302);
         }
