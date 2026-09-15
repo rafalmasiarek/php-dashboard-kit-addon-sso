@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.1.0...v1.1.1) (2026-09-15)
+
+
+### Bug Fixes
+
+* include dashboard prefix in post-login redirect target ([47b1d49](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/47b1d49f8ca55846d16d45e5c8696b42ed6078cd))
+* include dashboard prefix in post-login redirect target ([969f0a0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/969f0a07f9c273dccef63785f2a605a3e6378f40))
+
 ## [1.1.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.0.2...v1.1.0) (2026-09-13)
 
 
