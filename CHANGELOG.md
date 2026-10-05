@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.1.1...v1.2.0) (2026-10-05)
+
+
+### Features
+
+* **model:** migrate to dashboard-kit's Model CRUD (requires ^4.3) ([#12](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/12)) ([6b82e4c](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/6b82e4cb808a52313c0c6616f351b339b4e56ccf))
+
 ## [1.1.1](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.1.0...v1.1.1) (2026-09-15)
 
 
