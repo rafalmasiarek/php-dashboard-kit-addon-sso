@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Repository;
 
-use PDO;
+use rafalmasiarek\DashboardKit\Model\Model;
 
 /**
  * Manages short-lived authorization codes in the sso_auth_codes table.
@@ -16,13 +16,6 @@ use PDO;
  */
 final class AuthCodeRepository
 {
-    /**
-     * @param PDO $pdo Database connection.
-     */
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
-
     /**
      * Persists a new authorization code.
      *
@@ -46,26 +39,16 @@ final class AuthCodeRepository
         array $scopes,
         int $ttlSeconds = 600,
     ): void {
-        $driver     = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $scopesJson = json_encode($scopes, JSON_UNESCAPED_UNICODE);
-
-        if ($driver === 'mysql') {
-            $expiresExpr = 'DATE_ADD(NOW(), INTERVAL ? SECOND)';
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_auth_codes
-                    (code, client_id, user_id, redirect_uri, code_challenge, code_challenge_method, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, {$expiresExpr})"
-            );
-            $stmt->execute([$code, $clientId, $userId, $redirectUri, $codeChallenge, $method, $scopesJson, $ttlSeconds]);
-        } else {
-            $expiresAt = date('Y-m-d H:i:s', time() + $ttlSeconds);
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_auth_codes
-                    (code, client_id, user_id, redirect_uri, code_challenge, code_challenge_method, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-            );
-            $stmt->execute([$code, $clientId, $userId, $redirectUri, $codeChallenge, $method, $scopesJson, $expiresAt]);
-        }
+        Model::on('sso_auth_codes')->insert([
+            'code'                  => $code,
+            'client_id'             => $clientId,
+            'user_id'               => $userId,
+            'redirect_uri'          => $redirectUri,
+            'code_challenge'        => $codeChallenge,
+            'code_challenge_method' => $method,
+            'scopes'                => json_encode($scopes, JSON_UNESCAPED_UNICODE),
+            'expires_at'            => date('Y-m-d H:i:s', time() + $ttlSeconds),
+        ]);
     }
 
     /**
@@ -79,28 +62,20 @@ final class AuthCodeRepository
      */
     public function consume(string $code): ?array
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $now = date('Y-m-d H:i:s');
 
-        if ($driver === 'mysql') {
-            $nowExpr = 'NOW()';
-        } else {
-            $nowExpr = "datetime('now')";
-        }
+        $row = Model::on('sso_auth_codes')
+            ->where('code', $code)
+            ->where('used_at', null)
+            ->where('expires_at', '>', $now)
+            ->first();
 
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM sso_auth_codes
-             WHERE code = ? AND used_at IS NULL AND expires_at > {$nowExpr}"
-        );
-        $stmt->execute([$code]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row === false) {
+        if ($row === null) {
             return null;
         }
 
         // Mark as used immediately to prevent replay.
-        $upd = $this->pdo->prepare("UPDATE sso_auth_codes SET used_at = {$nowExpr} WHERE code = ?");
-        $upd->execute([$code]);
+        Model::on('sso_auth_codes')->where('code', $code)->update(['used_at' => $now]);
 
         return $row;
     }

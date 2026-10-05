@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Repository;
 
-use PDO;
+use rafalmasiarek\DashboardKit\Model\Model;
 
 /**
  * Manages access token metadata in the sso_access_tokens table.
@@ -17,41 +17,24 @@ use PDO;
 final class AccessTokenRepository
 {
     /**
-     * @param PDO $pdo Database connection.
-     */
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
-
-    /**
      * Records an issued access token by JTI.
      *
-     * @param string   $jti       UUID v4 used as the JWT 'jti' claim.
-     * @param string   $clientId  Client that requested the token.
-     * @param string   $userId    UUID of the authenticated user.
-     * @param string[] $scopes    Scopes granted to this token.
+     * @param string   $jti        UUID v4 used as the JWT 'jti' claim.
+     * @param string   $clientId   Client that requested the token.
+     * @param string   $userId     UUID of the authenticated user.
+     * @param string[] $scopes     Scopes granted to this token.
      * @param int      $ttlSeconds Lifetime in seconds; used to compute expires_at.
      * @return void
      */
     public function create(string $jti, string $clientId, string $userId, array $scopes, int $ttlSeconds): void
     {
-        $driver     = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $scopesJson = json_encode($scopes, JSON_UNESCAPED_UNICODE);
-
-        if ($driver === 'mysql') {
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_access_tokens (jti, client_id, user_id, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))"
-            );
-            $stmt->execute([$jti, $clientId, $userId, $scopesJson, $ttlSeconds]);
-        } else {
-            $expiresAt = date('Y-m-d H:i:s', time() + $ttlSeconds);
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_access_tokens (jti, client_id, user_id, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, ?)"
-            );
-            $stmt->execute([$jti, $clientId, $userId, $scopesJson, $expiresAt]);
-        }
+        Model::on('sso_access_tokens')->insert([
+            'jti'        => $jti,
+            'client_id'  => $clientId,
+            'user_id'    => $userId,
+            'scopes'     => json_encode($scopes, JSON_UNESCAPED_UNICODE),
+            'expires_at' => date('Y-m-d H:i:s', time() + $ttlSeconds),
+        ]);
     }
 
     /**
@@ -63,11 +46,7 @@ final class AccessTokenRepository
      */
     public function find(string $jti): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM sso_access_tokens WHERE jti = ?');
-        $stmt->execute([$jti]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return $row !== false ? $row : null;
+        return Model::on('sso_access_tokens')->where('jti', $jti)->first();
     }
 
     /**
@@ -78,11 +57,7 @@ final class AccessTokenRepository
      */
     public function revoke(string $jti): void
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $now    = $driver === 'mysql' ? 'NOW()' : "datetime('now')";
-
-        $stmt = $this->pdo->prepare("UPDATE sso_access_tokens SET revoked_at = {$now} WHERE jti = ?");
-        $stmt->execute([$jti]);
+        Model::on('sso_access_tokens')->where('jti', $jti)->update(['revoked_at' => date('Y-m-d H:i:s')]);
     }
 
     /**
@@ -95,17 +70,13 @@ final class AccessTokenRepository
      */
     public function allByUser(string $userId): array
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $now    = $driver === 'mysql' ? 'NOW()' : "datetime('now')";
-
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM sso_access_tokens
-             WHERE user_id = ? AND revoked_at IS NULL AND expires_at > {$now}
-             ORDER BY expires_at DESC"
-        );
-        $stmt->execute([$userId]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return Model::on('sso_access_tokens')
+            ->where('user_id', $userId)
+            ->where('revoked_at', null)
+            ->where('expires_at', '>', date('Y-m-d H:i:s'))
+            ->orderBy('expires_at', 'DESC')
+            ->get()
+            ->toArray();
     }
 
     /**
@@ -117,17 +88,13 @@ final class AccessTokenRepository
      */
     public function allActive(): array
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $now    = $driver === 'mysql' ? 'NOW()' : "datetime('now')";
-
-        $stmt = $this->pdo->query(
-            "SELECT at.*, u.email
-             FROM sso_access_tokens at
-             LEFT JOIN users u ON u.id = at.user_id
-             WHERE at.revoked_at IS NULL AND at.expires_at > {$now}
-             ORDER BY at.expires_at DESC"
-        );
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return Model::on('sso_access_tokens')
+            ->select('sso_access_tokens.*', 'users.email')
+            ->leftJoin('users', 'users.id', '=', 'sso_access_tokens.user_id')
+            ->where('revoked_at', null)
+            ->where('expires_at', '>', date('Y-m-d H:i:s'))
+            ->orderBy('expires_at', 'DESC')
+            ->get()
+            ->toArray();
     }
 }

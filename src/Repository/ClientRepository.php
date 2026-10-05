@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Repository;
 
-use PDO;
+use rafalmasiarek\DashboardKit\Model\Model;
 
 /**
  * Manages OAuth2 client records in the sso_clients table.
@@ -18,13 +18,6 @@ use PDO;
 final class ClientRepository
 {
     /**
-     * @param PDO $pdo Database connection.
-     */
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
-
-    /**
      * Fetches a single client row by client_id.
      *
      * @param string $clientId The client identifier.
@@ -33,11 +26,7 @@ final class ClientRepository
      */
     public function find(string $clientId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM sso_clients WHERE client_id = ?');
-        $stmt->execute([$clientId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return $row !== false ? $row : null;
+        return Model::on('sso_clients')->where('client_id', $clientId)->first();
     }
 
     /**
@@ -47,9 +36,7 @@ final class ClientRepository
      */
     public function findAll(): array
     {
-        $stmt = $this->pdo->query('SELECT * FROM sso_clients ORDER BY created_at DESC');
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return Model::on('sso_clients')->orderBy('created_at', 'DESC')->get()->toArray();
     }
 
     /**
@@ -57,6 +44,7 @@ final class ClientRepository
      *
      * When $secret is non-null it is stored as a bcrypt hash. Pass null for
      * public (PKCE-only) clients that authenticate solely via code_verifier.
+     * is_active/created_at are left to the schema's own defaults (1 / now).
      *
      * @param string      $clientId     Unique client identifier (e.g. 'swagger-ui').
      * @param string|null $secret       Plain-text secret to hash; null for public clients.
@@ -66,23 +54,12 @@ final class ClientRepository
      */
     public function create(string $clientId, ?string $secret, string $name, array $redirectUris): void
     {
-        $hash = $secret !== null ? password_hash($secret, PASSWORD_BCRYPT) : null;
-
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $urisJson = json_encode($redirectUris, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        if ($driver === 'mysql') {
-            $stmt = $this->pdo->prepare(
-                'INSERT INTO sso_clients (client_id, client_secret_hash, name, redirect_uris) VALUES (?, ?, ?, ?)'
-            );
-        } else {
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_clients (client_id, client_secret_hash, name, redirect_uris, is_active, created_at)
-                 VALUES (?, ?, ?, ?, 1, datetime('now'))"
-            );
-        }
-
-        $stmt->execute([$clientId, $hash, $name, $urisJson]);
+        Model::on('sso_clients')->insert([
+            'client_id'          => $clientId,
+            'client_secret_hash' => $secret !== null ? password_hash($secret, PASSWORD_BCRYPT) : null,
+            'name'               => $name,
+            'redirect_uris'      => json_encode($redirectUris, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        ]);
     }
 
     /**
@@ -96,23 +73,14 @@ final class ClientRepository
      */
     public function syncFromConfig(string $clientId, string $name, array $redirectUris): void
     {
-        $driver   = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $urisJson = json_encode($redirectUris, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        if ($driver === 'mysql') {
-            $stmt = $this->pdo->prepare(
-                'INSERT INTO sso_clients (client_id, name, redirect_uris) VALUES (?, ?, ?)
-                 ON DUPLICATE KEY UPDATE name = VALUES(name), redirect_uris = VALUES(redirect_uris)'
-            );
-        } else {
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_clients (client_id, name, redirect_uris, is_active, created_at)
-                 VALUES (?, ?, ?, 1, datetime('now'))
-                 ON CONFLICT(client_id) DO UPDATE SET name = excluded.name, redirect_uris = excluded.redirect_uris"
-            );
-        }
-
-        $stmt->execute([$clientId, $name, $urisJson]);
+        Model::on('sso_clients')->upsert(
+            [
+                'client_id'     => $clientId,
+                'name'          => $name,
+                'redirect_uris' => json_encode($redirectUris, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ],
+            ['client_id'],
+        );
     }
 
     /**
@@ -124,8 +92,7 @@ final class ClientRepository
      */
     public function setActive(string $clientId, bool $active): void
     {
-        $stmt = $this->pdo->prepare('UPDATE sso_clients SET is_active = ? WHERE client_id = ?');
-        $stmt->execute([$active ? 1 : 0, $clientId]);
+        Model::on('sso_clients')->where('client_id', $clientId)->update(['is_active' => $active ? 1 : 0]);
     }
 
     /**
@@ -140,8 +107,7 @@ final class ClientRepository
      */
     public function delete(string $clientId): void
     {
-        $stmt = $this->pdo->prepare('DELETE FROM sso_clients WHERE client_id = ?');
-        $stmt->execute([$clientId]);
+        Model::on('sso_clients')->where('client_id', $clientId)->forceDelete();
     }
 
     /**

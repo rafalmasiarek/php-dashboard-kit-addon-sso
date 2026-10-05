@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Http;
 
-use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use rafalmasiarek\DashboardKit\Model\Model;
 use rafalmasiarek\DashboardKitSso\Repository\AuthCodeRepository;
 use rafalmasiarek\DashboardKitSso\Service\PkceValidator;
 use rafalmasiarek\DashboardKitSso\Service\TokenService;
@@ -29,13 +29,11 @@ final class TokenHandler
      * @param AuthCodeRepository $authCodes    Authorization code store.
      * @param PkceValidator      $pkce         PKCE code verifier validator.
      * @param TokenService       $tokenService Issues and refreshes JWT token pairs.
-     * @param PDO                $pdo          Database connection for user lookup.
      */
     public function __construct(
         private readonly AuthCodeRepository $authCodes,
         private readonly PkceValidator      $pkce,
         private readonly TokenService       $tokenService,
-        private readonly PDO                $pdo,
     ) {
     }
 
@@ -146,14 +144,14 @@ final class TokenHandler
         }
 
         // Peek at the stored refresh token record to get user_id before consuming.
-        $hash = hash('sha256', $refreshToken);
-        $stmt = $this->pdo->prepare(
-            'SELECT user_id FROM sso_refresh_tokens WHERE token_hash = ? AND revoked_at IS NULL'
-        );
-        $stmt->execute([$hash]);
-        $rtRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        $hash  = hash('sha256', $refreshToken);
+        $rtRow = Model::on('sso_refresh_tokens')
+            ->select('user_id')
+            ->where('token_hash', $hash)
+            ->where('revoked_at', null)
+            ->first();
 
-        if ($rtRow === false) {
+        if ($rtRow === null) {
             return $this->errorResponse($response, 'invalid_grant', 'Refresh token is invalid or expired.', 400);
         }
 
@@ -187,13 +185,7 @@ final class TokenHandler
      */
     private function fetchUser(string $userId): ?array
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT id, email, role, active FROM users WHERE id = ?'
-        );
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return $row !== false ? $row : null;
+        return Model::on('users')->select('id', 'email', 'role', 'active')->where('id', $userId)->first();
     }
 
     /**
