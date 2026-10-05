@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.2.0...v1.3.0) (2026-10-05)
+
+
+### Features
+
+* **clock:** use Model::getClock() instead of raw date()/time() ([#14](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/14)) ([774b8ed](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/774b8ed8ea5bbe7815aa60206dc4c3d57bd0aa9c))
+
 ## [1.2.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.1.1...v1.2.0) (2026-10-05)
 
 
