@@ -47,7 +47,7 @@ final class AuthCodeRepository
             'code_challenge'        => $codeChallenge,
             'code_challenge_method' => $method,
             'scopes'                => json_encode($scopes, JSON_UNESCAPED_UNICODE),
-            'expires_at'            => date('Y-m-d H:i:s', time() + $ttlSeconds),
+            'expires_at'            => Model::getClock()->now()->modify("+{$ttlSeconds} seconds")->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -62,7 +62,7 @@ final class AuthCodeRepository
      */
     public function consume(string $code): ?array
     {
-        $now = date('Y-m-d H:i:s');
+        $now = Model::getClock()->now()->format('Y-m-d H:i:s');
 
         $row = Model::on('sso_auth_codes')
             ->where('code', $code)

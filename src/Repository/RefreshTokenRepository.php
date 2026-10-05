@@ -43,7 +43,7 @@ final class RefreshTokenRepository
             'client_id'  => $clientId,
             'user_id'    => $userId,
             'scopes'     => json_encode($scopes, JSON_UNESCAPED_UNICODE),
-            'expires_at' => date('Y-m-d H:i:s', time() + $ttlSeconds),
+            'expires_at' => Model::getClock()->now()->modify("+{$ttlSeconds} seconds")->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -59,7 +59,7 @@ final class RefreshTokenRepository
     public function consume(string $token): ?array
     {
         $hash = hash('sha256', $token);
-        $now  = date('Y-m-d H:i:s');
+        $now  = Model::getClock()->now()->format('Y-m-d H:i:s');
 
         $row = Model::on('sso_refresh_tokens')
             ->where('token_hash', $hash)
@@ -91,6 +91,6 @@ final class RefreshTokenRepository
         Model::on('sso_refresh_tokens')
             ->where('jti', $jti)
             ->where('revoked_at', null)
-            ->update(['revoked_at' => date('Y-m-d H:i:s')]);
+            ->update(['revoked_at' => Model::getClock()->now()->format('Y-m-d H:i:s')]);
     }
 }
