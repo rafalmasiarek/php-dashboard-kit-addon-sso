@@ -33,7 +33,7 @@ final class AccessTokenRepository
             'client_id'  => $clientId,
             'user_id'    => $userId,
             'scopes'     => json_encode($scopes, JSON_UNESCAPED_UNICODE),
-            'expires_at' => date('Y-m-d H:i:s', time() + $ttlSeconds),
+            'expires_at' => Model::getClock()->now()->modify("+{$ttlSeconds} seconds")->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -57,7 +57,7 @@ final class AccessTokenRepository
      */
     public function revoke(string $jti): void
     {
-        Model::on('sso_access_tokens')->where('jti', $jti)->update(['revoked_at' => date('Y-m-d H:i:s')]);
+        Model::on('sso_access_tokens')->where('jti', $jti)->update(['revoked_at' => Model::getClock()->now()->format('Y-m-d H:i:s')]);
     }
 
     /**
@@ -73,7 +73,7 @@ final class AccessTokenRepository
         return Model::on('sso_access_tokens')
             ->where('user_id', $userId)
             ->where('revoked_at', null)
-            ->where('expires_at', '>', date('Y-m-d H:i:s'))
+            ->where('expires_at', '>', Model::getClock()->now()->format('Y-m-d H:i:s'))
             ->orderBy('expires_at', 'DESC')
             ->get()
             ->toArray();
@@ -92,7 +92,7 @@ final class AccessTokenRepository
             ->select('sso_access_tokens.*', 'users.email')
             ->leftJoin('users', 'users.id', '=', 'sso_access_tokens.user_id')
             ->where('revoked_at', null)
-            ->where('expires_at', '>', date('Y-m-d H:i:s'))
+            ->where('expires_at', '>', Model::getClock()->now()->format('Y-m-d H:i:s'))
             ->orderBy('expires_at', 'DESC')
             ->get()
             ->toArray();
