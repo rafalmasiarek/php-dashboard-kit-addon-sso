@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Http;
 
-use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use rafalmasiarek\DashboardKit\Model\Model;
 use rafalmasiarek\DashboardKitSso\Repository\AccessTokenRepository;
 use rafalmasiarek\DashboardKitSso\Service\TokenService;
 
@@ -24,12 +24,10 @@ final class UserInfoHandler
     /**
      * @param TokenService          $tokenService  JWT decoder using the RSA public key.
      * @param AccessTokenRepository $accessTokens  Revocation check store.
-     * @param PDO                   $pdo           Database connection for live user fetch.
      */
     public function __construct(
         private readonly TokenService          $tokenService,
         private readonly AccessTokenRepository $accessTokens,
-        private readonly PDO                   $pdo,
     ) {
     }
 
@@ -71,13 +69,13 @@ final class UserInfoHandler
         }
 
         $userId = (string) ($payload['sub'] ?? '');
-        $stmt   = $this->pdo->prepare(
-            'SELECT id, email, role, first_name, last_name FROM users WHERE id = ? AND active = 1'
-        );
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        $user   = Model::on('users')
+            ->select('id', 'email', 'role', 'first_name', 'last_name')
+            ->where('id', $userId)
+            ->where('active', 1)
+            ->first();
 
-        if ($user === false) {
+        if ($user === null) {
             return $this->errorResponse($response, 403, 'access_denied', 'User not found or inactive.');
         }
 

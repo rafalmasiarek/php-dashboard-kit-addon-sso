@@ -74,10 +74,10 @@ final class SsoAddon
 
         // Wire repositories into container.
         $container->set(RsaKeyManager::class,           static fn()  => new RsaKeyManager($storageDir));
-        $container->set(ClientRepository::class,        static fn()  => new ClientRepository($pdo));
-        $container->set(AuthCodeRepository::class,      static fn()  => new AuthCodeRepository($pdo));
-        $container->set(AccessTokenRepository::class,   static fn()  => new AccessTokenRepository($pdo));
-        $container->set(RefreshTokenRepository::class,  static fn()  => new RefreshTokenRepository($pdo));
+        $container->set(ClientRepository::class,        static fn()  => new ClientRepository());
+        $container->set(AuthCodeRepository::class,      static fn()  => new AuthCodeRepository());
+        $container->set(AccessTokenRepository::class,   static fn()  => new AccessTokenRepository());
+        $container->set(RefreshTokenRepository::class,  static fn()  => new RefreshTokenRepository());
 
         $container->set(PkceValidator::class, static fn() => new PkceValidator());
 
@@ -211,7 +211,6 @@ final class SsoAddon
                 $c->get(AuthCodeRepository::class),
                 $c->get(PkceValidator::class),
                 $c->get(TokenService::class),
-                $c->get(PDO::class),
             )
         );
 
@@ -219,7 +218,6 @@ final class SsoAddon
             new UserInfoHandler(
                 $c->get(TokenService::class),
                 $c->get(AccessTokenRepository::class),
-                $c->get(PDO::class),
             )
         );
 

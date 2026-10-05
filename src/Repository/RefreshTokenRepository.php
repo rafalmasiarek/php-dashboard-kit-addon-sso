@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace rafalmasiarek\DashboardKitSso\Repository;
 
-use PDO;
+use rafalmasiarek\DashboardKit\Model\Model;
 
 /**
  * Manages refresh token records in the sso_refresh_tokens table.
@@ -16,13 +16,6 @@ use PDO;
  */
 final class RefreshTokenRepository
 {
-    /**
-     * @param PDO $pdo Database connection.
-     */
-    public function __construct(private readonly PDO $pdo)
-    {
-    }
-
     /**
      * Persists a new refresh token.
      *
@@ -44,24 +37,14 @@ final class RefreshTokenRepository
         array $scopes,
         int $ttlSeconds,
     ): void {
-        $driver     = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $hash       = hash('sha256', $token);
-        $scopesJson = json_encode($scopes, JSON_UNESCAPED_UNICODE);
-
-        if ($driver === 'mysql') {
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_refresh_tokens (token_hash, jti, client_id, user_id, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))"
-            );
-            $stmt->execute([$hash, $jti, $clientId, $userId, $scopesJson, $ttlSeconds]);
-        } else {
-            $expiresAt = date('Y-m-d H:i:s', time() + $ttlSeconds);
-            $stmt = $this->pdo->prepare(
-                "INSERT INTO sso_refresh_tokens (token_hash, jti, client_id, user_id, scopes, expires_at)
-                 VALUES (?, ?, ?, ?, ?, ?)"
-            );
-            $stmt->execute([$hash, $jti, $clientId, $userId, $scopesJson, $expiresAt]);
-        }
+        Model::on('sso_refresh_tokens')->insert([
+            'token_hash' => hash('sha256', $token),
+            'jti'        => $jti,
+            'client_id'  => $clientId,
+            'user_id'    => $userId,
+            'scopes'     => json_encode($scopes, JSON_UNESCAPED_UNICODE),
+            'expires_at' => date('Y-m-d H:i:s', time() + $ttlSeconds),
+        ]);
     }
 
     /**
@@ -75,24 +58,21 @@ final class RefreshTokenRepository
      */
     public function consume(string $token): ?array
     {
-        $hash   = hash('sha256', $token);
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $now    = $driver === 'mysql' ? 'NOW()' : "datetime('now')";
+        $hash = hash('sha256', $token);
+        $now  = date('Y-m-d H:i:s');
 
-        $stmt = $this->pdo->prepare(
-            "SELECT * FROM sso_refresh_tokens
-             WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > {$now}"
-        );
-        $stmt->execute([$hash]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = Model::on('sso_refresh_tokens')
+            ->where('token_hash', $hash)
+            ->where('revoked_at', null)
+            ->where('expires_at', '>', $now)
+            ->first();
 
-        if ($row === false) {
+        if ($row === null) {
             return null;
         }
 
         // Mark revoked to prevent reuse.
-        $upd = $this->pdo->prepare("UPDATE sso_refresh_tokens SET revoked_at = {$now} WHERE token_hash = ?");
-        $upd->execute([$hash]);
+        Model::on('sso_refresh_tokens')->where('token_hash', $hash)->update(['revoked_at' => $now]);
 
         return $row;
     }
@@ -108,12 +88,9 @@ final class RefreshTokenRepository
      */
     public function revokeByJti(string $jti): void
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $now    = $driver === 'mysql' ? 'NOW()' : "datetime('now')";
-
-        $stmt = $this->pdo->prepare(
-            "UPDATE sso_refresh_tokens SET revoked_at = {$now} WHERE jti = ? AND revoked_at IS NULL"
-        );
-        $stmt->execute([$jti]);
+        Model::on('sso_refresh_tokens')
+            ->where('jti', $jti)
+            ->where('revoked_at', null)
+            ->update(['revoked_at' => date('Y-m-d H:i:s')]);
     }
 }
