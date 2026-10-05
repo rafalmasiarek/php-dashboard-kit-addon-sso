@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.3.0...v1.3.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **deps:** require dashboard-kit ^5.0 ([#16](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/16)) ([858aeaa](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/858aeaa55056ed9780402f8b9882fffd4c85fa78))
+
 ## [1.3.0](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.2.0...v1.3.0) (2026-10-05)
 
 
