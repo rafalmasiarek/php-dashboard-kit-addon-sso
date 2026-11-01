@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.3.1...v1.3.2) (2026-11-01)
+
+
+### Miscellaneous Chores
+
+* **deps:** accept any dashboard-kit &gt;=5.0, not just the current major ([#19](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/19)) ([8644c18](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/8644c18ed0247fbd9d84f1f94c22f5e2c072f42d))
+
 ## [1.3.1](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.3.0...v1.3.1) (2026-10-05)
 
 
