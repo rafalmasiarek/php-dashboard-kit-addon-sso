@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.3](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.3.2...v1.3.3) (2026-11-17)
+
+
+### Bug Fixes
+
+* rename includes to footer_includes in README.yml ([#22](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/22)) ([54168a4](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/54168a45f63baed79f78353dffe9e7c81531a0f3))
+
+
+### Miscellaneous Chores
+
+* sync shared config ([#18](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/issues/18)) ([a02d131](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/commit/a02d1319dc92ec4463b9c2a2fa9721de5db95a56))
+
 ## [1.3.2](https://github.com/rafalmasiarek/php-dashboard-kit-addon-sso/compare/v1.3.1...v1.3.2) (2026-11-01)
 
 
