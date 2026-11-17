@@ -25,7 +25,7 @@ context:
 
     Implements the Authorization Code flow with PKCE and RS256-signed JWTs. Exposes standard OpenID Connect protocol endpoints and an admin UI for managing OAuth2 clients.
 
-includes:
+footer_includes:
   - docs/usage.md
   - docs/api.md
 
